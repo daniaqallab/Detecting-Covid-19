@@ -1,0 +1,80 @@
+from tensorflow.python.keras.models import load_model
+from tensorflow.python.keras.preprocessing import image
+import matplotlib.pyplot as plt
+import numpy as np
+import cv2
+import os
+images = []
+labels = []
+for filename in os.listdir("test"):
+    label=filename
+    img = cv2.imread(os.path.join("test",filename))
+    image = cv2.cvtColor(img , cv2.COLOR_BGR2RGB)
+    image = cv2.resize(img, (224, 224))
+    if image is not None:
+        images.append(image)
+        labels.append(label)
+
+
+print(len(images))
+print(len(labels))
+#print(labels)
+
+#images=images.reshape(224,224,1)
+model=load_model("covid19_model.h5")
+#predIdxs = model.predict(images, batch_size=8)
+#print(predIdxs)
+id=0
+tp=0
+fp=0
+fn=0
+tn=0
+for i in images:
+  img=np.asarray(i)
+  plt.imshow(img)
+  img=np.expand_dims(img,axis=0)
+  model=load_model("covid19_model.h5")
+  output=model.predict(img)
+  print(output)
+  if output[0][0] > output[0][1]:
+      print('normal')
+      print(labels[id])
+      if labels[id][0] == 'n':
+        tn = tn +1
+      else:
+        fn = fn +1
+  else:
+      print('covid')
+      print(labels[id])
+      if labels[id][0] == 'c':
+        tp = tp + 1
+      else:
+        fp = fp + 1
+
+  id = id +1
+print("tp:",tp)
+print("fp:",fp)
+print("fn:",fn)
+print("tn",tn)
+
+import seaborn as sn
+import pandas as pd
+import matplotlib.pyplot as plt
+list=['covid','normal']
+array=[[tp,fp],
+       [fn,tn]]
+df_cm = pd.DataFrame(array, index = [i for i in list],
+                  columns = [i for i in list])
+plt.figure(figsize = (10,7))
+sn.heatmap(df_cm, annot=True)
+plt.xlabel('Actual')
+plt.ylabel('Predicted')
+total = tp+fp+fn+tn
+acc = (tp+tn) / total
+sensitivity = tp / (tp + fp)
+specificity = tn / (fn + tn)
+print("acc: {:.4f}".format(acc))
+print("sensitivity: {:.4f}".format(sensitivity))
+print("specificity: {:.4f}".format(specificity))
+
+
